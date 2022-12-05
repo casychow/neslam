@@ -11,6 +11,14 @@ Creating NeSLAM model based off of nerfstudio documentation:
 and the 3 detailed-focus layer MLP seen in NICE-SLAM:
 https://github.com/cvg/nice-slam/blob/master/src/conv_onet/models/decoder.py
 
+NeSLAM, NICE-SLAM, and Mip-Nerf probably work better because of Gaussian Fourier Feature Transforms
+and that all of them use multiple MLPs (or voxel grids in NICE-SLAM's case) to detect and use at least
+2 detail layers: fine and coarse. NeSLAM and Mip-Nerf take it up a notch by also detecting and using
+a medium detail layer.
+https://github.com/cvg/nice-slam/blob/master/src/conv_onet/models/decoder.py
+and https://github.com/ciglenecki/nerf-research (mip-nerf)
+Mip-Nerf paper: https://arxiv.org/pdf/2103.13415.pdf
+
 Need overall view?
 https://github.com/nerfstudio-project/nerfstudio/blob/afd6fec6e73557e662978af742fd1c464e92f556/docs/nerfology/methods/nerfacto.md
 
