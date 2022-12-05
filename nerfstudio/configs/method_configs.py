@@ -33,6 +33,7 @@ from nerfstudio.models.base_model import VanillaModelConfig
 from nerfstudio.models.instant_ngp import InstantNGPModelConfig
 from nerfstudio.models.mipnerf import MipNerfModel
 from nerfstudio.models.nerfacto import NerfactoModelConfig
+from nerfstudio.models.neslam import NeSLAMModel
 from nerfstudio.models.semantic_nerfw import SemanticNerfWModelConfig
 from nerfstudio.models.vanilla_nerf import NeRFModel
 from nerfstudio.pipelines.base_pipeline import VanillaPipelineConfig
@@ -41,6 +42,7 @@ from nerfstudio.pipelines.dynamic_batch import DynamicBatchPipelineConfig
 method_configs: Dict[str, Config] = {}
 descriptions = {
     "nerfacto": "Recommended real-time model tuned for real captures. This model will be continually updated.",
+    "neslam": "Custom model tuned for real captures based on bounded scenes. (Might be slow)",
     "instant-ngp": "Implementation of Instant-NGP. Recommended real-time model for bounded synthetic data.",
     "mipnerf": "High quality model for bounded scenes. (slow)",
     "semantic-nerfw": "Predicts semantic segmentations and filters out transient objects.",
@@ -76,6 +78,35 @@ method_configs["nerfacto"] = Config(
     viewer=ViewerConfig(num_rays_per_chunk=1 << 15),
     vis="viewer",
 )
+
+method_configs["neslam"] = Config(
+    method_name="neslam",
+    pipeline=VanillaPipelineConfig(
+        datamanager=VanillaDataManagerConfig(
+            dataparser=BlenderDataParserConfig(),
+            train_num_rays_per_batch=8192,
+            camera_optimizer=CameraOptimizerConfig(
+                mode="SO3xR3", optimizer=AdamOptimizerConfig(lr=6e-4, eps=1e-8, weight_decay=1e-2)
+            ),
+        ),
+        model=VanillaModelConfig(
+            _target=NeSLAMModel,
+            loss_coefficients={"rgb_loss_coarse": 0.1, "rgb_loss_fine": 1.0},
+            num_coarse_samples=128,
+            num_importance_samples=128,
+            eval_num_rays_per_chunk=8192,
+        ),
+    ),
+    optimizers={
+        "fields": {
+            "optimizer": RAdamOptimizerConfig(lr=5e-4, eps=1e-08),
+            "scheduler": None,
+        }
+    },
+    viewer=ViewerConfig(num_rays_per_chunk=1 << 15),
+    vis="viewer",
+)
+
 
 method_configs["instant-ngp"] = Config(
     method_name="instant-ngp",
