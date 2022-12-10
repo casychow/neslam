@@ -7,13 +7,17 @@ that NerfStudio/NerfStudio's COLMAP can run.
 
 Following directions from COLMAP's official documentation:
 https://colmap.github.io/faq.html?highlight=two%20view%20tracks#reconstruct-sparse-dense-model-from-known-camera-poses
+https://colmap.github.io/format.html#binary-file-format
 
 Assuming we are using the same recorded data for COLMAP and ORB-SLAM (ie. same camera),
 we want to create a dense model from known camera poses (taken from ORB-SLAM)
 
-Requirements:
+Requirements/Directions:
 - Need to put the output transforms.json file in the same parent directory as "colmap"
 and the "images (_2, _4, _8) folder" before you feed it into NerfStudio
+- Be sure to save COLMAP transforms.json file somewhere else if you want it.
+Otherwise this program will overwrite the file.
+- Change the ORBSLAM_TXT_OUTPUT_FILENAME variable to the ORB-SLAM output file name.
 
 Folder hierarchy:
 -processed-data (custom folder name)

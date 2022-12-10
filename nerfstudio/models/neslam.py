@@ -75,7 +75,9 @@ class NeSLAMModel(Model):
         config: ModelConfig,
         **kwargs,
     ) -> None:
-        self.field = None
+        self.field_coarse = None
+        self.field_medium = None
+        self.field_fine = None
         super().__init__(config=config, **kwargs)
 
     def populate_modules(self):
@@ -100,18 +102,26 @@ class NeSLAMModel(Model):
         """
         # setting up fields
         position_encoding = NeRFEncoding(
-            in_dim=3, num_frequencies=16, min_freq_exp=0.0, max_freq_exp=16.0, include_input=True
-        )
+            in_dim=3, num_frequencies=10, min_freq_exp=0.0, max_freq_exp=8.0, include_input=True
+        ) #num_freq=16, max_freq_exp=16
         direction_encoding = NeRFEncoding(
             in_dim=3, num_frequencies=4, min_freq_exp=0.0, max_freq_exp=4.0, include_input=True
         )
-        self.field = NeRFField(
-            position_encoding=position_encoding, direction_encoding=direction_encoding, use_integrated_encoding=True
-        )
+
+        # From mip-nerf
+        # self.field = NeRFField(
+        #     position_encoding=position_encoding, direction_encoding=direction_encoding, use_integrated_encoding=True
+        # )
+
+        # From vanilla_nerf
+        self.field_coarse = NeRFField(position_encoding=position_encoding, direction_encoding=direction_encoding)
+        self.field_medium = NeRFField(position_encoding=position_encoding, direction_encoding=direction_encoding)
+        self.field_fine = NeRFField(position_encoding=position_encoding, direction_encoding=direction_encoding)
 
         # samplers
         self.sampler_uniform = UniformSampler(num_samples=self.config.num_coarse_samples)
-        self.sampler_pdf = PDFSampler(num_samples=self.config.num_importance_samples, include_original=False)
+        self.sampler_pdf = PDFSampler(num_samples=self.config.num_importance_samples)
+        #, include_original=False) # for mip-nerf
 
         # renderers
         self.renderer_rgb = RGBRenderer(background_color=colors.WHITE)
@@ -131,7 +141,8 @@ class NeSLAMModel(Model):
         param_groups = {}
         if self.field is None:
             raise ValueError("populate_fields() must be called before get_param_groups")
-        param_groups["fields"] = list(self.field.parameters())
+        # param_groups["fields"] = list(self.field.parameters()) # From mipnerf
+        param_groups["fields"] = list(self.field_coarse.parameters()) + list(self.field_medium.parameters()) + list(self.field_fine.parameters())
         return param_groups
 
     # def get_training_callbacks(
@@ -142,14 +153,14 @@ class NeSLAMModel(Model):
     def get_outputs(self, ray_bundle: RayBundle):
         """Process a RayBundle object and return RayOutputs describing quanties for each ray."""
 
-        if self.field is None:
+        if (self.field_coarse is None) or (self.field_medium is None) or (self.field_fine is None):
             raise ValueError("populate_fields() must be called before get_outputs")
 
         # uniform sampling
         ray_samples_uniform = self.sampler_uniform(ray_bundle)
 
         # First pass:
-        field_outputs_coarse = self.field.forward(ray_samples_uniform)
+        field_outputs_coarse = self.field_coarse.forward(ray_samples_uniform)
         weights_coarse = ray_samples_uniform.get_weights(field_outputs_coarse[FieldHeadNames.DENSITY])
         rgb_coarse = self.renderer_rgb(
             rgb=field_outputs_coarse[FieldHeadNames.RGB],
@@ -162,20 +173,20 @@ class NeSLAMModel(Model):
         ray_samples_pdf = self.sampler_pdf(ray_bundle, ray_samples_uniform, weights_coarse)
 
         # Second pass:
-        field_outputs_medium = self.field.forward(ray_samples_pdf)
+        field_outputs_medium = self.field_medium.forward(ray_samples_pdf)
         weights_medium = ray_samples_pdf.get_weights(field_outputs_medium[FieldHeadNames.DENSITY])
         rgb_medium = self.renderer_rgb(
             rgb=field_outputs_medium[FieldHeadNames.RGB],
             weights=weights_medium,
         )
-        accumulation_medium = self.renderer_accumulation(weights_fine)
-        depth_medium = self.renderer_depth(weights_fine, ray_samples_pdf)
+        accumulation_medium = self.renderer_accumulation(weights_medium)
+        depth_medium = self.renderer_depth(weights_medium, ray_samples_pdf)
 
         # pdf sampling again
-        ray_samples_pdf = self.sampler_pdf(ray_bundle, ray_samples_uniform, weights_coarse)
+        ray_samples_pdf = self.sampler_pdf(ray_bundle, ray_samples_uniform, weights_medium)
 
         # Third pass:
-        field_outputs_fine = self.field.forward(ray_samples_pdf)
+        field_outputs_fine = self.field_fine.forward(ray_samples_pdf)
         weights_fine = ray_samples_pdf.get_weights(field_outputs_fine[FieldHeadNames.DENSITY])
         rgb_fine = self.renderer_rgb(
             rgb=field_outputs_fine[FieldHeadNames.RGB],
@@ -202,11 +213,14 @@ class NeSLAMModel(Model):
 
     def get_loss_dict(self, outputs, batch, metrics_dict=None):
         """Returns a dictionary of losses to be summed which will be your loss."""
-        image = batch["image"].to(self.device)
+        device = outputs["rgb_coarse"].device
+        image = batch["image"].to(device)
+
         rgb_loss_coarse = self.rgb_loss(image, outputs["rgb_coarse"])
-        rgb_loss_fine = self.rgb_loss(image, outputs["rgb_fine"])
         rgb_loss_medium = self.rgb_loss(image, outputs["rgb_medium"])
-        loss_dict = {"rgb_loss_coarse": rgb_loss_coarse, "rgb_loss_fine": rgb_loss_fine, "rgb_loss_medium": rgb_loss_medium}
+        rgb_loss_fine = self.rgb_loss(image, outputs["rgb_fine"])
+
+        loss_dict = {"rgb_loss_coarse": rgb_loss_coarse, "rgb_loss_medium": rgb_loss_medium, "rgb_loss_fine": rgb_loss_fine}
         loss_dict = misc.scale_dict(loss_dict, self.config.loss_coefficients)
         return loss_dict
 
@@ -249,9 +263,11 @@ class NeSLAMModel(Model):
         rgb_coarse = torch.moveaxis(rgb_coarse, -1, 0)[None, ...]
         rgb_medium = torch.moveaxis(rgb_medium, -1, 0)[None, ...]
         rgb_fine = torch.moveaxis(rgb_fine, -1, 0)[None, ...]
-        rgb_coarse = torch.clip(rgb_coarse, min=-1, max=1)
-        rgb_medium = torch.clip(rgb_medium, min=-1, max=1)
-        rgb_fine = torch.clip(rgb_fine, min=-1, max=1)
+
+        # Done in mipnerf but not in vanilla_nerf
+        # rgb_coarse = torch.clip(rgb_coarse, min=-1, max=1)
+        # rgb_medium = torch.clip(rgb_medium, min=-1, max=1)
+        # rgb_fine = torch.clip(rgb_fine, min=-1, max=1)
 
         coarse_psnr = self.psnr(image, rgb_coarse)
         medium_psnr = self.psnr(image, rgb_medium)
