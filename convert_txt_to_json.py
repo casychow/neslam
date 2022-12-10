@@ -28,6 +28,7 @@ Folder hierarchy:
 # def create_transform_matrix()
 
 ORBSLAM_TO_NERFSTUDIO = True
+ORBSLAM_TXT_OUTPUT_FILENAME = 'f_dataset-MH01_monoi.txt'
 
 if not ORBSLAM_TO_NERFSTUDIO:
     # Need to create cameras.txt, points3D.txt, and images.txt in a new folder for COLMAP
@@ -51,77 +52,84 @@ if not ORBSLAM_TO_NERFSTUDIO:
     cparam_file.write("1 PINHOLE 640 480 382.613 320.183 236.455")
     cparam_file.close()
 
-# [] - Automate adding info from json file
-data_dict = {
-    "fl_x": 382.613,
-    "fl_y": 382.613,
-    "cx": 320.183,
-    "cy": 236.455,
-    "w": 640,
-    "h": 480,
-    "camera_model": "PINHOLE", #might be 'OPENCV' instead
-    "k1": 0, #-0.04320926712496241,
-    "k2": 0, #0.03283919508795189,
-    "p1": 0, #-0.003930289929289693,
-    "p2": 0, #0.001183353703859939,
-    "frames": []
-}
+try:
+    # [] - Automate adding info from json file
+    data_dict = {
+        "fl_x": 382.613,
+        "fl_y": 382.613,
+        "cx": 320.183,
+        "cy": 236.455,
+        "w": 640,
+        "h": 480,
+        "camera_model": "PINHOLE", #might be 'OPENCV' instead
+        "k1": 0, #-0.04320926712496241,
+        "k2": 0, #0.03283919508795189,
+        "p1": 0, #-0.003930289929289693,
+        "p2": 0, #0.001183353703859939,
+        "frames": []
+    }
 
-# https://colmap.github.io/format.html#binary-file-format
-# Edit images.txt file for COLMAP using data from ORB-SLAM
-# The format of each ORB-SLAM line is 'timestamp tx ty tz qx qy qz qw'
-    # timestamp (float) gives the number of seconds since the Unix epoch.
-    # tx ty tz (3 floats) give the position of the optical center of the color camera with respect to the world origin as defined by the motion capture system.
-    # qx qy qz qw (4 floats) give the orientation of the optical center of the color camera in form of a unit quaternion with respect to the world origin as defined by the motion capture system.
-# Format for each images.txt line is 'IMAGE_ID, QW, QX, QY, QZ, TX, TY, TZ, CAMERA_ID, NAME
-                                    # POINTS2D[] as (X, Y, POINT3D_ID)'
-# images_file = open('images.txt', 'w')
-with open('test-monoi.txt') as txt_file:
-    for ind, line in enumerate(txt_file):
-        tx, ty, tz, qx, qy, qz, qw = line.split()[1:]
-        tx = float(tx)
-        ty = float(ty)
-        tz = float(tz)
-        qx = float(qx)
-        qy = float(qy)
-        qz = float(qz)
-        qw = float(qw)
-        # Only need to rewrite data in the correct format if we use COLMAP again
-        # if not ORBSLAM_TO_NERFSTUDIO: colmap_data = [ind+1, qw, qx, qy, qz, tx, ty, tz, 1, 'PINHOLE']
+    # https://colmap.github.io/format.html#binary-file-format
+    # Edit images.txt file for COLMAP using data from ORB-SLAM
+    # The format of each ORB-SLAM line is 'timestamp tx ty tz qx qy qz qw'
+        # timestamp (float) gives the number of seconds since the Unix epoch.
+        # tx ty tz (3 floats) give the position of the optical center of the color camera with respect to the world origin as defined by the motion capture system.
+        # qx qy qz qw (4 floats) give the orientation of the optical center of the color camera in form of a unit quaternion with respect to the world origin as defined by the motion capture system.
+    # Format for each images.txt line is 'IMAGE_ID, QW, QX, QY, QZ, TX, TY, TZ, CAMERA_ID, NAME
+                                        # POINTS2D[] as (X, Y, POINT3D_ID)'
+    # images_file = open('images.txt', 'w')
+    with open(ORBSLAM_TXT_OUTPUT_FILENAME) as txt_file:
+        for ind, line in enumerate(txt_file):
+            tx, ty, tz, qx, qy, qz, qw = line.split()[1:]
+            tx = float(tx)
+            ty = float(ty)
+            tz = float(tz)
+            qx = float(qx)
+            qy = float(qy)
+            qz = float(qz)
+            qw = float(qw)
+            # Only need to rewrite data in the correct format if we use COLMAP again
+            # if not ORBSLAM_TO_NERFSTUDIO: colmap_data = [ind+1, qw, qx, qy, qz, tx, ty, tz, 1, 'PINHOLE']
 
-        # Construct 'file_path' value
-        digit = len(str(ind + 1))
-        image_format_zeroes = 5 - digit # Count number of zeroes we need to specify frame number
-        image_path = "images\\frame_{}.jpg".format(image_format_zeroes*'0'+str(ind+1))
+            # Construct 'file_path' value
+            digit = len(str(ind + 1))
+            image_format_zeroes = 5 - digit # Count number of zeroes we need to specify frame number
+            image_path = "images\\frame_{}.jpg".format(image_format_zeroes*'0'+str(ind+1))
 
-        # Construct 'transform_matrix' value
-        R_matrix = [
-            [1-2*qz**2-2*qw**2, 2*qy*qz-2*qx*qw, 2*qy*qw+2*qx*qz, tx],
-            [2*qy*qz+2*qx*qw, 1-2*qy**2-2*qw**2, 2*qz*qw-2*qx*qy, ty],
-            [2*qy*qw-2*qx*qz, 2*qz*qw+2*qx*qy, 1-2*qy**2-2*qz**2, tz],
-            [0.0, 0.0, 0.0, 1.0]
-        ]
+            # Construct 'transform_matrix' value
+            R_matrix = [
+                [1-2*qz**2-2*qw**2, 2*qy*qz-2*qx*qw, 2*qy*qw+2*qx*qz, tx],
+                [2*qy*qz+2*qx*qw, 1-2*qy**2-2*qw**2, 2*qz*qw-2*qx*qy, ty],
+                [2*qy*qw-2*qx*qz, 2*qz*qw+2*qx*qy, 1-2*qy**2-2*qz**2, tz],
+                [0.0, 0.0, 0.0, 1.0]
+            ]
 
-        # Construct frame_dict to append to 'frames' value
-        frame_dict = {
-            "file_path": image_path,
-            "transform_matrix": R_matrix
-        }
-        data_dict['frames'].append(frame_dict)
-
-
-# function
-#tx-tz last col
-#qx-qw = q1-q4 for R matrix
-#last row of R matrix is homogeneous (0,0,0,1)
+            # Construct frame_dict to append to 'frames' value
+            frame_dict = {
+                "file_path": image_path,
+                "transform_matrix": R_matrix
+            }
+            data_dict['frames'].append(frame_dict)
 
 
-with open('transforms.json', 'w') as json_file:
-    json.dump(data_dict, json_file, indent=4)
+    # function
+    #tx-tz last col
+    #qx-qw = q1-q4 for R matrix
+    #last row of R matrix is homogeneous (0,0,0,1)
 
-# For COLMAP:
-# Read camera poses
-# Need to write camera calibration information first
+
+    with open('transforms.json', 'w') as json_file:
+        json.dump(data_dict, json_file, indent=4)
+
+    # For COLMAP:
+    # Read camera poses
+    # Need to write camera calibration information first
+except FileNotFoundError:
+    print(f"File {ORBSLAM_TXT_OUTPUT_FILENAME} not found. Aborting")
+except OSError:
+    print(f"OS error occurred trying to open {ORBSLAM_TXT_OUTPUT_FILENAME}")
+except Exception as err:
+    print(f"Unexpected error opening {ORBSLAM_TXT_OUTPUT_FILENAME} is", repr(err))
 
 """
 format of json file:
