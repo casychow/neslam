@@ -79,35 +79,6 @@ method_configs["nerfacto"] = Config(
     vis="viewer",
 )
 
-method_configs["neslam"] = Config(
-    method_name="neslam",
-    pipeline=VanillaPipelineConfig(
-        datamanager=VanillaDataManagerConfig(
-            dataparser=BlenderDataParserConfig(),
-            train_num_rays_per_batch=8192,
-            camera_optimizer=CameraOptimizerConfig(
-                mode="SO3xR3", optimizer=AdamOptimizerConfig(lr=6e-4, eps=1e-8, weight_decay=1e-2)
-            ),
-        ),
-        model=VanillaModelConfig(
-            _target=NeSLAMModel,
-            loss_coefficients={"rgb_loss_coarse": 0.1, "rgb_loss_fine": 1.0},
-            num_coarse_samples=128,
-            num_importance_samples=128,
-            eval_num_rays_per_chunk=8192,
-        ),
-    ),
-    optimizers={
-        "fields": {
-            "optimizer": RAdamOptimizerConfig(lr=5e-4, eps=1e-08),
-            "scheduler": None,
-        }
-    },
-    viewer=ViewerConfig(num_rays_per_chunk=1 << 15),
-    vis="viewer",
-)
-
-
 method_configs["instant-ngp"] = Config(
     method_name="instant-ngp",
     trainer=TrainerConfig(
@@ -145,6 +116,31 @@ method_configs["mipnerf"] = Config(
             "scheduler": None,
         }
     },
+)
+
+method_configs["neslam"] = Config(
+    method_name="neslam",
+    trainer=TrainerConfig(
+        steps_per_eval_batch=500, steps_per_save=2000, max_num_iterations=30000, mixed_precision=True
+    ),
+    pipeline=VanillaPipelineConfig(
+        datamanager=VanillaDataManagerConfig(dataparser=BlenderDataParserConfig(), train_num_rays_per_batch=8192),
+        model=VanillaModelConfig(
+            _target=NeSLAMModel,
+            loss_coefficients={"rgb_loss_coarse": 0.1, "rgb_loss_fine": 1.0},
+            num_coarse_samples=128,
+            num_importance_samples=128,
+            eval_num_rays_per_chunk=8192,
+        ),
+    ),
+    optimizers={
+        "fields": {
+            "optimizer": RAdamOptimizerConfig(lr=5e-4, eps=1e-08),
+            "scheduler": None,
+        }
+    },
+    # viewer=ViewerConfig(num_rays_per_chunk=1 << 15),
+    # vis="viewer",
 )
 
 method_configs["semantic-nerfw"] = Config(

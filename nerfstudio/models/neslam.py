@@ -43,7 +43,7 @@ from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
 
 from nerfstudio.cameras.rays import RayBundle
 
-from nerfstudio.models.base_model import Model
+from nerfstudio.models.base_model import Model, ModelConfig
 # from nerfstudio.models.nerfacto import NerfactoModelConfig
 
 # from nerfstudio.field_components.spatial_distortions import SceneContraction
@@ -70,6 +70,13 @@ class NeSLAMModel(Model):
     """
 
     # config: NeSLAMModelConfig
+    def __init__(
+        self,
+        config: ModelConfig,
+        **kwargs,
+    ) -> None:
+        self.field = None
+        super().__init__(config=config, **kwargs)
 
     def populate_modules(self):
         """Set the fields and modules."""
