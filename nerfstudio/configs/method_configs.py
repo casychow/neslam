@@ -100,8 +100,10 @@ method_configs["instant-ngp"] = Config(
 
 method_configs["mipnerf"] = Config(
     method_name="mipnerf",
+    viewer=ViewerConfig(num_rays_per_chunk=1 << 16),
     pipeline=VanillaPipelineConfig(
-        datamanager=VanillaDataManagerConfig(dataparser=BlenderDataParserConfig(), train_num_rays_per_batch=8192),
+        # datamanager=VanillaDataManagerConfig(dataparser=BlenderDataParserConfig(), train_num_rays_per_batch=8192),
+        datamanager=VanillaDataManagerConfig(dataparser=NerfstudioDataParserConfig(), train_num_rays_per_batch=8192),
         model=VanillaModelConfig(
             _target=MipNerfModel,
             loss_coefficients={"rgb_loss_coarse": 0.1, "rgb_loss_fine": 1.0},
@@ -116,6 +118,7 @@ method_configs["mipnerf"] = Config(
             "scheduler": None,
         }
     },
+    vis="viewer",
 )
 
 method_configs["semantic-nerfw"] = Config(
@@ -123,7 +126,8 @@ method_configs["semantic-nerfw"] = Config(
     trainer=TrainerConfig(steps_per_eval_batch=500, steps_per_save=2000, mixed_precision=True),
     pipeline=VanillaPipelineConfig(
         datamanager=VanillaDataManagerConfig(
-            dataparser=FriendsDataParserConfig(), train_num_rays_per_batch=4096, eval_num_rays_per_batch=8192
+            # dataparser=FriendsDataParserConfig(), train_num_rays_per_batch=4096, eval_num_rays_per_batch=8192
+            dataparser=NerfstudioDataParserConfig(), train_num_rays_per_batch=4096, eval_num_rays_per_batch=8192
         ),
         model=SemanticNerfWModelConfig(eval_num_rays_per_chunk=1 << 16),
     ),
@@ -143,9 +147,11 @@ method_configs["semantic-nerfw"] = Config(
 
 method_configs["vanilla-nerf"] = Config(
     method_name="vanilla-nerf",
+    viewer=ViewerConfig(num_rays_per_chunk=1 << 15),
     pipeline=VanillaPipelineConfig(
         datamanager=VanillaDataManagerConfig(
-            dataparser=BlenderDataParserConfig(),
+            # dataparser=BlenderDataParserConfig(),
+            dataparser=NerfstudioDataParserConfig(),
         ),
         model=VanillaModelConfig(_target=NeRFModel),
     ),
@@ -155,23 +161,25 @@ method_configs["vanilla-nerf"] = Config(
             "scheduler": None,
         }
     },
+    vis="viewer" 
 )
 
+print("Calling neslam properly from method_configs")
 method_configs["neslam"] = Config(
     method_name="neslam",
+    viewer=ViewerConfig(num_rays_per_chunk=1 << 15),
     trainer=TrainerConfig(
-        steps_per_eval_batch=500, steps_per_save=2000, max_num_iterations=30000, mixed_precision=True
+        steps_per_save=2000, steps_per_eval_batch=500, max_num_iterations=30000, mixed_precision=True
     ),
-
-    # Commented lines - Pipeline from nerfacto/mipnerf
-    pipeline=VanillaPipelineConfig(
+    pipeline=VanillaPipelineConfig(#LOOKING AT PIPELINE NOW
         datamanager=VanillaDataManagerConfig(
-            dataparser=BlenderDataParserConfig(),
-            # train_num_rays_per_batch=4096,
-            # eval_num_rays_per_batch=4096,
-            # camera_optimizer=CameraOptimizerConfig(
-            #     mode="SO3xR3", optimizer=AdamOptimizerConfig(lr=6e-4, eps=1e-8, weight_decay=1e-2)
-            # ),
+            dataparser=NerfstudioDataParserConfig(),
+            #need to use nerfstudio dataparser to run on real data
+            train_num_rays_per_batch=4096,
+            eval_num_rays_per_batch=4096,
+            camera_optimizer=CameraOptimizerConfig(
+                mode="SO3xR3", optimizer=AdamOptimizerConfig(lr=6e-4, eps=1e-8, weight_decay=1e-2)
+            ),
         ),
         model=VanillaModelConfig(
             _target=NeSLAMModel
@@ -184,10 +192,16 @@ method_configs["neslam"] = Config(
             "scheduler": None,
         }
     },
-    viewer=ViewerConfig(num_rays_per_chunk=1 << 15),
-    vis="viewer",
+    vis="viewer"    
 )
+# method_configs["neslam"].save_config()
 
+# 1. Try copying neslam as exactly as nerfacto and use that.
+# 2. __init__.py error - make sure file is inside datamanagers folder
+# 3. Ensure tyro version 0.3.34 is NOT used. Instead, use 0.3.33
+
+
+# Looks like nerfstudio-dataparser is more bug-free than blenderdataparser
 
 
 
