@@ -1,11 +1,3 @@
-<p align="center">
-    <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://docs.nerf.studio/en/latest/_images/logo-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://docs.nerf.studio/en/latest/_images/logo.png">
-    <img alt="nerfstudio" src="https://docs.nerf.studio/en/latest/_images/logo.png" width="400">
-    </picture>
-</p>
-
 <!-- Use this for pypi package (and disable above). Hacky workaround -->
 <!-- <p align="center">
     <img alt="nerfstudio" src="https://docs.nerf.studio/en/latest/_images/logo.png" width="400">
@@ -24,7 +16,7 @@
 
 # About
 
-Mr. NeSLAM is a NeRF SLAM algorithm intended for mobile robots.
+Mr. NeSLAM is a NeRF SLAM algorithm intended for mobile robots based on NerfStudio.
 
 ## 1. Installation: Setup the environment
 
