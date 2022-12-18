@@ -194,3 +194,5 @@ We initially decided to use Monocular-Inertial data, but we had to switch to Ste
 We then received an output text file and converted the quaternion values into coordinates used by NeRFStudio with the `convert_txt_to_json.py` file.
 
 <!-- # Phase 3: Testing -->
+
+README.md was created with the help of hackmd.io
