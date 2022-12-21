@@ -35,8 +35,8 @@ A table of contents has been provided for ease-of-project access. The final vide
 
 
 # Results
-<!-- [NeSLAM Project Video](https://youtu.be/jSPsX-cWzDQ) -->
-[![Watch the video](https://i.imgur.com/bhhHcS6.jpg)](https://youtu.be/jSPsX-cWzDQ)
+<!-- [![caption](https://i.imgur.com/bhhHcS6.jpg)](https://youtu.be/jSPsX-cWzDQ) -->
+[![Watch the NeSLAM Project Video](https://user-images.githubusercontent.com/58012214/208792824-7f4aee82-d2cf-41b4-a7a2-e6e854398ca7.png)](https://youtu.be/jSPsX-cWzDQ)
 
 
 
