@@ -14,8 +14,8 @@
 
 -->
 
-# NeSLAM: NeRF and Visual Simultaneous Localization and Mapping
-NeSLAM is a NeRF SLAM algorithm intended for mobile robots created by Cassandra Chow and Diar Sanakov. The algorithm is based on NerfStudio. This is the class project for the ROB 6203: Robot Perception course at New York University.
+# NeSLAM: NeRF and VSLAM
+NeSLAM is a Neural Radiance Field (NeRF) and Visual Simultaneous Localization and Mapping (SLAM) algorithm intended for mobile robots created by Cassandra Chow and Diar Sanakov. The algorithm is based on NerfStudio. This is the class project for the ROB 6203: Robot Perception course at New York University.
 
 A table of contents has been provided for ease-of-project access. The final video listed below narrates how the project went and what our results were. The following README.md document is to inform others how we setup our environments, if anyone would like to recreate them. If so, please do share and give credit. Thank you.
 
