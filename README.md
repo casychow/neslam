@@ -19,6 +19,8 @@ NeSLAM is a Neural Radiance Field (NeRF) and Visual Simultaneous Localization an
 
 A table of contents has been provided for ease-of-project access. The final video listed below narrates how the project went and what our results were. The following README.md document is to inform others how we setup our environments, if anyone would like to recreate them. If so, please do share and give credit. Thank you.
 
+Note: This is an archived repo.
+
 # Table of Contents
 - Results
 - Getting Started
